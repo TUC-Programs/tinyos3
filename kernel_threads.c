@@ -11,12 +11,12 @@
 Tid_t sys_CreateThread(Task task, int argl, void* args)
 {
   PCB* PCBcurrent = CURPROC;
-  TCB* tcb = spawn_thread(CURPROC, start_main_thread);
+  TCB* tcb = spawn_thread(PCBcurrent, start_main_thread_ptcb);
   //aquire a PTCB
   acquire_PTCB(tcb,task,argl,args);
 
   //increase the counter of threads in the PCB
-  CURPROC -> thread_count++;
+  PCBcurrent -> thread_count++;
 
   //start the thread
   wakeup(tcb);
