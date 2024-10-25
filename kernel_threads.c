@@ -37,7 +37,7 @@ Tid_t sys_ThreadSelf()
   */
 int sys_ThreadJoin(Tid_t tid, int* exitval)
 {
-	PTCB* ptcb = (PTCB*) tid;
+  PTCB* ptcb = (PTCB*) tid;
   PCB* curproc = CURPROC;
 
   // Check if a Thread with that tid exists in this process else return -1
@@ -73,8 +73,9 @@ int sys_ThreadJoin(Tid_t tid, int* exitval)
   if(ptcb->refcount == 1){
     rlist_remove(&(ptcb->ptcb_list_node));
     free(ptcb);
-
   }
+
+  return 0;
 }
 
 /**
