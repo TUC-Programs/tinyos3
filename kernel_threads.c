@@ -41,7 +41,7 @@ int sys_ThreadJoin(Tid_t tid, int* exitval)
   PCB* curproc = CURPROC;
 
   // Check if a Thread with that tid exists in this process else return -1
-  if(rlist_find(&curproc->ptcb_list, ptcb, NULL) == NULL){
+  if(rlist_find(&curproc->list_ptcb, ptcb, NULL) == NULL){
     return -1;
   }
 
