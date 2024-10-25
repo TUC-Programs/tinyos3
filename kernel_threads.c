@@ -91,6 +91,6 @@ int sys_ThreadDetach(Tid_t tid)
   */
 void sys_ThreadExit(int exitval)
 {
-
+  
 }
 
