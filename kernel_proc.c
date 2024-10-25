@@ -133,14 +133,16 @@ is that here implement the ptcb
 
 void start_main_thread_ptcb()
 {
+if(cur_thread() != NULL){
   int exitval;
 
-  Task call =  CURPROC->main_task;
-  int argl = CURPROC->argl;
-  void* args = CURPROC->args;
+  Task call =  cur_thread()->ptcb->task;
+  int argl = cur_thread()->ptcb->argl;
+  void* args = cur_thread()->ptcb->args;
 
   exitval = call(argl,args);
-  ThreadExit(exitval);
+ ThreadExit(exitval);
+}
 }
 
 /*
