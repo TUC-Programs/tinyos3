@@ -83,7 +83,23 @@ int sys_ThreadJoin(Tid_t tid, int* exitval)
   */
 int sys_ThreadDetach(Tid_t tid)
 {
-	return -1;
+  PTCB* ptcb = (PTCB*) tid;
+
+  if((rlist_find(&(CURPROC -> list_ptcb), ptcb, NULL)) == NULL){
+    return -1;
+  }
+  else if( tid == NOTHREAD){
+    return -1;
+  }
+  else if(ptcb -> exited == 1){
+    return -1;
+  }
+
+  ptcb -> detached = 1;  //DO the flug = 1 (true) of the detached
+  kernel_broadcast(&ptcb -> exit_cv); //use kernel_broadcast to broadcast all threads that waiting in threaJoin
+  ptcb -> refcount = 1; //reset the refcount (=1)
+
+  return 0;
 }
 
 /**
