@@ -107,7 +107,7 @@ int sys_ThreadDetach(Tid_t tid)
   */
 void sys_ThreadExit(int exitval)
 {
-  PTCB* ptcb = cur_thread()->ptcb;
+ PTCB* ptcb = cur_thread()->ptcb;
 
   // Change the current PTCB to exit status
   ptcb->exitval = exitval;
@@ -150,26 +150,26 @@ void sys_ThreadExit(int exitval)
       free(ptcb_list_node->ptcb);
     }
 
-    // Set FIDT to NULL
-    for(int i = 0; i < MAX_FILEID; i++){
-      if(process->FIDT[i] != NULL){
-        FCB_decref(process->FIDT[i]);
-        process->FIDT[i] = NULL;
+      /* Release the args data */
+    if(curproc->args) {
+      free(curproc->args);
+      curproc->args = NULL;
+    }
+
+    /* Clean up FIDT */
+    for(int i=0;i<MAX_FILEID;i++) {
+      if(curproc->FIDT[i] != NULL) {
+        FCB_decref(curproc->FIDT[i]);
+        curproc->FIDT[i] = NULL;
       }
     }
 
-    // Set args data to NULL
-    if(process->args){
-      free(process->args);
-      process->args = NULL;
-    }
-
-    // Set main thread to NULL
-    process->main_thread = NULL;
-
-    // Make the exited processes as ZOMBIEs
-    process->pstate = ZOMBIE;
+    /* Disconnect my main_thread */
+    curproc->main_thread = NULL;
+    /* Now, mark the process as exited. */
+    curproc->pstate = ZOMBIE;
   }
+  /* Bye-bye cruel world */
   kernel_sleep(EXITED,SCHED_USER);
 }
 
