@@ -124,24 +124,24 @@ void sys_ThreadExit(int exitval)
   if(process->thread_count == 0){
     if(get_pid(process) != 1){
       PCB* initpcb = get_pcb(1);
-      while(!is_rlist_empty(&CURPROC->children_list)) {
-        rlnode* child = rlist_pop_front(&CURPROC->children_list);
+      while(!is_rlist_empty(&process->children_list)) {
+        rlnode* child = rlist_pop_front(&process->children_list);
         child->pcb->parent = initpcb;
         rlist_push_front(&initpcb->children_list, child);
       }
     /* Add exited children to the initial task's exited list 
        and signal the initial task */
-      if(!is_rlist_empty(&CURPROC->exited_list)) {
-        rlist_append(&initpcb->exited_list, &CURPROC->exited_list);
+      if(!is_rlist_empty(&process->exited_list)) {
+        rlist_append(&initpcb->exited_list, &process->exited_list);
         kernel_broadcast(&initpcb->child_exit);
       }
 
     /* Put me into my parent's exited list */
-      rlist_push_front(&CURPROC->parent->exited_list, &CURPROC->exited_node);
-      kernel_broadcast(&CURPROC->parent->child_exit);
+      rlist_push_front(&process->parent->exited_list, &process->exited_node);
+      kernel_broadcast(&process->parent->child_exit);
     }
-    assert(is_rlist_empty(&CURPROC->children_list));
-    assert(is_rlist_empty(&CURPROC->exited_list));
+    assert(is_rlist_empty(&process->children_list));
+    assert(is_rlist_empty(&process->exited_list));
 
     // Clean the PTCB 
     while(is_rlist_empty(&process->list_ptcb) != 0){
@@ -151,23 +151,23 @@ void sys_ThreadExit(int exitval)
     }
 
       /* Release the args data */
-    if(CURPROC->args) {
-      free(CURPROC->args);
-      CURPROC->args = NULL;
+    if(process->args) {
+      free(process->args);
+      process->args = NULL;
     }
 
     /* Clean up FIDT */
     for(int i=0;i<MAX_FILEID;i++) {
-      if(CURPROC->FIDT[i] != NULL) {
-        FCB_decref(CURPROC->FIDT[i]);
-        CURPROC->FIDT[i] = NULL;
+      if(process->FIDT[i] != NULL) {
+        FCB_decref(process->FIDT[i]);
+        process->FIDT[i] = NULL;
       }
     }
 
     /* Disconnect my main_thread */
-    CURPROC->main_thread = NULL;
+    process->main_thread = NULL;
     /* Now, mark the process as exited. */
-    CURPROC->pstate = ZOMBIE;
+    process->pstate = ZOMBIE;
   }
   /* Bye-bye cruel world */
   kernel_sleep(EXITED,SCHED_USER);
