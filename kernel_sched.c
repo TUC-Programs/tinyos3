@@ -591,8 +591,15 @@ static void idle_thread()
  */
 void initialize_scheduler()
 {
-	rlnode_init(&SCHED, NULL);
+	/* Initialize the priority queue of MLFQ */
+	for(int i = 0; i < PRIORITY_QUEUES; i++){
+		rlnode_init(&SCHED[i], NULL);
+	}
+
 	rlnode_init(&TIMEOUT_LIST, NULL);
+
+    /* here reset the counter number of yield calls */
+	yield_calls = 0;
 }
 
 void run_scheduler()
