@@ -151,23 +151,23 @@ void sys_ThreadExit(int exitval)
     }
 
       /* Release the args data */
-    if(curproc->args) {
-      free(curproc->args);
-      curproc->args = NULL;
+    if(CURPROC->args) {
+      free(CURPROC->args);
+      CURPROC->args = NULL;
     }
 
     /* Clean up FIDT */
     for(int i=0;i<MAX_FILEID;i++) {
-      if(curproc->FIDT[i] != NULL) {
-        FCB_decref(curproc->FIDT[i]);
-        curproc->FIDT[i] = NULL;
+      if(CURPROC->FIDT[i] != NULL) {
+        FCB_decref(CURPROC->FIDT[i]);
+        CURPROC->FIDT[i] = NULL;
       }
     }
 
     /* Disconnect my main_thread */
-    curproc->main_thread = NULL;
+    CURPROC->main_thread = NULL;
     /* Now, mark the process as exited. */
-    curproc->pstate = ZOMBIE;
+    CURPROC->pstate = ZOMBIE;
   }
   /* Bye-bye cruel world */
   kernel_sleep(EXITED,SCHED_USER);
