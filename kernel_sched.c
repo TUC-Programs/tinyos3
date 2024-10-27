@@ -11,7 +11,10 @@
 #include <valgrind/valgrind.h>
 #endif
 
-#define PRIORITY_QUEUES 40
+#define YIELD_CALLS 2000  // here is the maximum yield calls for the threads boosting
+#define PRIORITY_QUEUES 50 // we have choose 50 queues for the MLFQ
+
+int yield_calls;
 /********************************************
 	
 	Core table and CCB-related declarations.
@@ -229,7 +232,7 @@ void release_TCB(TCB* tcb)
   Both of these structures are protected by @c sched_spinlock.
 */
 
-rlnode SCHED; /* The scheduler queue */
+rlnode SCHED[PRIORITY_QUEUES]; /* The scheduler queue */
 rlnode TIMEOUT_LIST; /* The list of threads with a timeout */
 Mutex sched_spinlock = MUTEX_INIT; /* spinlock for scheduler queue */
 
@@ -272,7 +275,7 @@ static void sched_register_timeout(TCB* tcb, TimerDuration timeout)
 static void sched_queue_add(TCB* tcb)
 {
 	/* Insert at the end of the scheduling list */
-	rlist_push_back(&SCHED, &tcb->sched_node);
+	rlist_push_back(&SCHED[tcb -> priority], &tcb->sched_node);
 
 	/* Restart possibly halted cores */
 	cpu_core_restart_one();
@@ -330,8 +333,23 @@ static void sched_wakeup_expired_timeouts()
 */
 static TCB* sched_queue_select(TCB* current)
 {
+	int maxPriority = 0;
+	int i;
+
+	//here traverse all queues to find the highest priority thread 
+	//Check if we have empty queues
+	for( i = PRIORITY_QUEUES - 1; i >= 0; i--){
+		int emptyQueue = is_rlist_empty(&SCHED[i]);
+
+		//check for emply queues
+		if(emptyQueue == 0){
+			maxPriority = i;
+			break;
+		}
+	}
+
 	/* Get the head of the SCHED list */
-	rlnode* sel = rlist_pop_front(&SCHED);
+	rlnode* sel = rlist_pop_front(&SCHED[maxPriority]);
 
 	TCB* next_thread = sel->tcb; /* When the list is empty, this is NULL */
 
@@ -341,6 +359,7 @@ static TCB* sched_queue_select(TCB* current)
 	next_thread->its = QUANTUM;
 
 	return next_thread;
+
 }
 
 /*
@@ -409,6 +428,9 @@ void sleep_releasing(Thread_state state, Mutex* mx, enum SCHED_CAUSE cause,
 
 void yield(enum SCHED_CAUSE cause)
 {
+
+	yield_calls++; //increase the counter of yield calls as needed
+
 	/* Reset the timer, so that we are not interrupted by ALARM */
 	TimerDuration remaining = bios_cancel_timer();
 
@@ -430,6 +452,50 @@ void yield(enum SCHED_CAUSE cause)
 
 	/* Wake up threads whose sleep timeout has expired */
 	sched_wakeup_expired_timeouts();
+
+
+	/*
+	We have consider that lowest priority queue is 0 and 
+	highest priority queue is N ( PRIORITY_QUEUES - 1 )
+	*/
+
+	switch(cause){
+
+	case SCHED_QUANTUM:
+		if( current -> priority > 0){
+			current -> priority--;
+		}
+		break;
+
+	case SCHED_IO:
+
+		//check if we already are in max priority (N)
+		if( current -> priority == PRIORITY_QUEUES -1 ){
+			current -> priority = PRIORITY_QUEUES - 1;
+		}
+		//increase the priority by 1 of thread
+		else{
+			current -> priority++;
+		}
+
+		break;
+
+	case SCHED_MUTEX:
+
+		//here check if both current and last cause is SCHED_MUTEX 
+		//If it is correct decrase the highest priority thread
+		if( current -> curr_cause == SCHED_MUTEX && current -> last_cause == SCHED_MUTEX && current -> priority > 0){
+			//decrease the priority by 1 
+			current -> priority--;
+		}
+		break;
+
+	default: //other cases not need the above implementation
+		
+		break;
+		
+	}
+
 
 	/* Get next */
 	TCB* next = sched_queue_select(current);
