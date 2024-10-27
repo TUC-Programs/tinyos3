@@ -635,7 +635,11 @@ void run_scheduler()
 
 
 TCB* thread_init(TCB* n_tcb, PCB* proc, void(*func)(), Task call, int argl,void*args){
-	if(n_tcb == NULL){
+	n_tcb = spawn_thread(proc,func);
+	acquire_PTCB(n_tcb,call,argl,args);
+	n_tcb->owner_pcb->thread_count++;
+	return n_tcb;
+	/*if(n_tcb == NULL){
 		n_tcb = spawn_thread(proc,func);
 	}
 
@@ -648,7 +652,7 @@ TCB* thread_init(TCB* n_tcb, PCB* proc, void(*func)(), Task call, int argl,void*
 		}
 	}
 
-	return n_tcb;
+	return n_tcb;*/
 }
 
 
