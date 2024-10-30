@@ -120,7 +120,7 @@ typedef struct process_thread_control_block
 }PTCB;
 
 TCB* thread_init(TCB* n_tcb, PCB* proc, void(*func)(), Task call, int argl,void*args);
-void acquire_PTCB(TCB* tcb, Task task, int argl, void*arg);
+//void acquire_PTCB(TCB* tcb, Task task, int argl, void* args);
 
 
 

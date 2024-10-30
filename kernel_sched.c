@@ -11,10 +11,6 @@
 #include <valgrind/valgrind.h>
 #endif
 
-#define YIELD_CALLS 2000  // here is the maximum yield calls for the threads boosting
-#define PRIORITY_QUEUES 50 // we have choose 50 queues for the MLFQ
-
-int yield_calls;
 /********************************************
 	
 	Core table and CCB-related declarations.
@@ -161,9 +157,7 @@ TCB* spawn_thread(PCB* pcb, void (*func)())
 	/* Set the owner */
 	tcb->owner_pcb = pcb;
 
-	tcb->owner_pcb = pcb;
 	tcb->ptcb = NULL;
-	tcb->priority = PRIORITY_QUEUES - 1;
 
 	/* Initialize the other attributes */
 	tcb->type = NORMAL_THREAD;
@@ -231,8 +225,7 @@ void release_TCB(TCB* tcb)
 
   Both of these structures are protected by @c sched_spinlock.
 */
-
-rlnode SCHED[PRIORITY_QUEUES]; /* The scheduler queue */
+rlnode SCHED;
 rlnode TIMEOUT_LIST; /* The list of threads with a timeout */
 Mutex sched_spinlock = MUTEX_INIT; /* spinlock for scheduler queue */
 
@@ -275,8 +268,7 @@ static void sched_register_timeout(TCB* tcb, TimerDuration timeout)
 static void sched_queue_add(TCB* tcb)
 {
 	/* Insert at the end of the scheduling list */
-	rlist_push_back(&SCHED[tcb -> priority], &tcb->sched_node);
-
+	rlist_push_back(&SCHED, &tcb->sched_node);
 	/* Restart possibly halted cores */
 	cpu_core_restart_one();
 }
@@ -333,23 +325,8 @@ static void sched_wakeup_expired_timeouts()
 */
 static TCB* sched_queue_select(TCB* current)
 {
-	int maxPriority = 0;
-	int i;
-
-	//here traverse all queues to find the highest priority thread 
-	//Check if we have empty queues
-	for( i = PRIORITY_QUEUES - 1; i >= 0; i--){
-		int emptyQueue = is_rlist_empty(&SCHED[i]);
-
-		//check for emply queues
-		if(emptyQueue == 0){
-			maxPriority = i;
-			break;
-		}
-	}
-
 	/* Get the head of the SCHED list */
-	rlnode* sel = rlist_pop_front(&SCHED[maxPriority]);
+	rlnode* sel = rlist_pop_front(&SCHED);
 
 	TCB* next_thread = sel->tcb; /* When the list is empty, this is NULL */
 
@@ -429,7 +406,6 @@ void sleep_releasing(Thread_state state, Mutex* mx, enum SCHED_CAUSE cause,
 void yield(enum SCHED_CAUSE cause)
 {
 
-	yield_calls++; //increase the counter of yield calls as needed
 
 	/* Reset the timer, so that we are not interrupted by ALARM */
 	TimerDuration remaining = bios_cancel_timer();
@@ -442,8 +418,9 @@ void yield(enum SCHED_CAUSE cause)
 	Mutex_Lock(&sched_spinlock);
 
 	/* Update CURTHREAD state */
-	if (current->state == RUNNING)
+	if (current->state == RUNNING){
 		current->state = READY;
+	}
 
 	/* Update CURTHREAD scheduler data */
 	current->rts = remaining;
@@ -452,50 +429,6 @@ void yield(enum SCHED_CAUSE cause)
 
 	/* Wake up threads whose sleep timeout has expired */
 	sched_wakeup_expired_timeouts();
-
-
-	/*
-	We have consider that lowest priority queue is 0 and 
-	highest priority queue is N ( PRIORITY_QUEUES - 1 )
-	*/
-
-	switch(cause){
-
-	case SCHED_QUANTUM:
-		if( current -> priority > 0){
-			current -> priority--;
-		}
-		break;
-
-	case SCHED_IO:
-
-		//check if we already are in max priority (N)
-		if( current -> priority == PRIORITY_QUEUES -1 ){
-			current -> priority = PRIORITY_QUEUES - 1;
-		}
-		//increase the priority by 1 of thread
-		else{
-			current -> priority++;
-		}
-
-		break;
-
-	case SCHED_MUTEX:
-
-		//here check if both current and last cause is SCHED_MUTEX 
-		//If it is correct decrase the highest priority thread
-		if( current -> curr_cause == SCHED_MUTEX && current -> last_cause == SCHED_MUTEX && current -> priority > 0){
-			//decrease the priority by 1 
-			current -> priority--;
-		}
-		break;
-
-	default: //other cases not need the above implementation
-		
-		break;
-		
-	}
-
 
 	/* Get next */
 	TCB* next = sched_queue_select(current);
@@ -517,6 +450,9 @@ void yield(enum SCHED_CAUSE cause)
 	  */
 	gain(preempt);
 }
+
+
+
 
 /*
   This function must be called at the beginning of each new timeslice.
@@ -591,15 +527,10 @@ static void idle_thread()
  */
 void initialize_scheduler()
 {
-	/* Initialize the priority queue of MLFQ */
-	for(int i = 0; i < PRIORITY_QUEUES; i++){
-		rlnode_init(&SCHED[i], NULL);
-	}
-
+	
+	rlnode_init(&SCHED, NULL);
 	rlnode_init(&TIMEOUT_LIST, NULL);
 
-    /* here reset the counter number of yield calls */
-	yield_calls = 0;
 }
 
 void run_scheduler()
@@ -639,37 +570,40 @@ void run_scheduler()
 }
 
 
+TCB* thread_init(TCB* tcb, PCB* proc, void(*func)(), Task task, int argl,void*args){
+	
+	tcb = spawn_thread(proc,func);
 
+	PTCB* ptcb = (PTCB*)xmalloc(sizeof(PTCB));
 
-TCB* thread_init(TCB* n_tcb, PCB* proc, void(*func)(), Task call, int argl,void*args){
-	n_tcb = spawn_thread(proc,func);
-	acquire_PTCB(n_tcb,call,argl,args);
-	n_tcb->owner_pcb->thread_count++;
-	return n_tcb;
-	/*if(n_tcb == NULL){
-		n_tcb = spawn_thread(proc,func);
-	}
+	ptcb->tcb = tcb;
+	tcb->ptcb = ptcb;
 
-	if(n_tcb != NULL){
-		if(acquire_PTCB(n_tcb,call,argl,args) == 0){
-			n_tcb -> owner_pcb -> thread_count++;
-		}
-		else{
-			return NULL;
-		}
-	}
+	ptcb->task = task;
+	ptcb->argl = argl;
+	ptcb->args = args;
 
-	return n_tcb;*/
+	ptcb->exited = 0; //this is a flug can be 0 or 1 we choose 0
+	ptcb->detached = 0; 
+	ptcb->exitval = 0;
+
+	ptcb->exit_cv = COND_INIT;
+	ptcb->refcount = 1;
+
+	rlnode_init(&ptcb->ptcb_list_node, ptcb);
+	rlist_push_back(&tcb->owner_pcb->list_ptcb, &ptcb->ptcb_list_node); 
+
+	tcb->owner_pcb->thread_count++;
+	return tcb;
 }
 
 
-
-
-
-
-void acquire_PTCB(TCB* tcb, Task task, int argl, void*args)
+/*void acquire_PTCB(TCB* tcb, Task task, int argl, void* args)
 {
 	PTCB* ptcb = (PTCB*)xmalloc(sizeof(PTCB));
+
+	ptcb->tcb = tcb;
+	tcb->ptcb = ptcb;
 
 	ptcb->task = task;
 	ptcb->argl = argl;
@@ -686,4 +620,5 @@ void acquire_PTCB(TCB* tcb, Task task, int argl, void*args)
 	rlist_push_back(&tcb->owner_pcb->list_ptcb, &ptcb->ptcb_list_node);   
 
 
-}
+}*/
+

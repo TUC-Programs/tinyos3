@@ -12,7 +12,25 @@ Tid_t sys_CreateThread(Task task, int argl, void* args)
   PCB* PCBcurrent = CURPROC;
   TCB* tcb = spawn_thread(PCBcurrent, start_main_thread_ptcb);
   //aquire a PTCB
-  acquire_PTCB(tcb,task,argl,args);
+  //acquire_PTCB(tcb,task,argl,args);
+  PTCB* ptcb = (PTCB*)xmalloc(sizeof(PTCB));
+
+  ptcb->tcb = tcb;
+  tcb->ptcb = ptcb;
+
+  ptcb->task = task;
+  ptcb->argl = argl;
+  ptcb->args = args;
+
+  ptcb->exited = 0; //this is a flug can be 0 or 1 we choose 0
+  ptcb->detached = 0; 
+  ptcb->exitval = 0;
+
+  ptcb->exit_cv = COND_INIT;
+  ptcb->refcount = 1;
+
+  rlnode_init(&ptcb->ptcb_list_node, ptcb);
+  rlist_push_back(&tcb->owner_pcb->list_ptcb, &ptcb->ptcb_list_node); 
 
   //increase the counter of threads in the PCB
   PCBcurrent -> thread_count++;
@@ -61,7 +79,11 @@ int sys_ThreadJoin(Tid_t tid, int* exitval)
     kernel_wait(&(ptcb->exit_cv),SCHED_USER);
   }
   // Waited for the PTCB to finish and now we decrease the amount of TCB
-  ptcb->refcount = ptcb->refcount + 1;
+  ptcb->refcount = ptcb->refcount - 1;
+
+  if(ptcb->detached == 1){
+    return -1;
+  }
 
   // Check if the exitval is null then save the exit from PTCB to exitval
   if(exitval != NULL){
