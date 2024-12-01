@@ -47,24 +47,24 @@ int sys_Listen(Fid_t sock)
 		return -1;
 	}
 	
-	SCB* socket = fcb->streamobj;
-	if(socket == NULL){
+	SCB* scb = fcb->streamobj;
+	if(scb == NULL){
 		return -1;
 	}
-	if(socket->type != SOCKET_UNBOUND){ // Check if socket is not unbound else return -1 
+	if(scb->type != SOCKET_UNBOUND){ // Check if socket is not unbound else return -1 
 		return -1;
 	}
-	if(socket->port <= 0 || socket->port > MAX_PORT){ // Check if port is valid else return -1
+	if(scb->port <= 0 || scb->port > MAX_PORT){ // Check if port is valid else return -1
 		return -1;
 	}
-	if(PORT_MAP[socket->port] != NULL){ // Check if the socket has already been initialized
+	if(PORT_MAP[scb->port] != NULL){ // Check if the socket has already been initialized
 		return -1;
 	}
 
-	socket->type = SOCKET_LISTENER;
-	socket->listener_s.req_available = COND_INIT;
-	rlnode_init(&(socket->listener_s.queue),NULL);
-	PORT_MAP[socket->port] = socket;
+	scb->type = SOCKET_LISTENER;
+	scb->listener_s.req_available = COND_INIT;
+	rlnode_init(&(scb->listener_s.queue),NULL);
+	PORT_MAP[scb->port] = scb;
 	return 0;
 }
 
@@ -89,8 +89,6 @@ Fid_t sys_Accept(Fid_t lsock)
 	if(socket->type != SOCKET_LISTENER || port < 0 || port > MAX_PORT || PORT_MAP[port] == NULL || (PORT_MAP[port])->type != SOCKET_LISTENER){
 		return NOFILE;
 	}
-	
-
 
 	socket->refcount = socket->refcount + 1;
 	while(is_rlist_empty(&socket->listener_s.queue)){
@@ -100,10 +98,30 @@ Fid_t sys_Accept(Fid_t lsock)
 		}
 	}
 
+	PCB* cur = CURPROC;
+
+	int fidFlag = 0;
+	for(int i = 0; i < MAX_FILEID; i++){
+		if(cur->FIDT[i] == NULL){
+			fidFlag = 1;
+			break;
+		}
+	}
+	if(fidFlag == 0){
+		return NOFILE;
+	}
+
+	socket->refcount = socket->refcount + 1;
+	while(is_rlist_empty(&socket->listener_s.req_available)){
+		kernel_wait(&socket->listener_s.req_available, SCHED_IO);
+		if(PORT_MAP[port] == NULL){ // Check if port is still valid
+			return NOFILE;
+		}
+	}
+	
 	RC* request = rlist_pop_front(&socket->listener_s.queue)->rc;
 	request->admitted = 1;
 	SCB* socket2 = request->peer;
-
 	if(socket2 == NULL){
 		return NOFILE;
 	}
@@ -231,7 +249,6 @@ int sys_ShutDown(Fid_t sock, shutdown_mode how)
 
 	default:
 		return -1;
-		break;
 	}
 	return -1;
 	
@@ -247,8 +264,7 @@ int socket_close(void* socket){
 	if(socket_cb->type == SOCKET_LISTENER){
 		PORT_MAP[socket_cb->port] = NULL;
 		kernel_broadcast(&socket_cb->listener_s.req_available);
-	}
-	else if(socket_cb->type == SOCKET_PEER){
+	}else if(socket_cb->type == SOCKET_PEER){
 		if(!(pipe_reader_close(socket_cb->peer_s.read_pipe)) || pipe_writer_close(socket_cb->peer_s.write_pipe)){
 			return -1;
 		}
@@ -320,6 +336,3 @@ PipeCB* create_pipe_accept(FCB* reader, FCB* writer){
 
 	return nPipe;
 }
-
-
-
