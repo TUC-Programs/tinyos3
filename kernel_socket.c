@@ -83,10 +83,10 @@ Fid_t sys_Accept(Fid_t lsock)
 		return NOFILE;
 	}
 
-	SCB* socket = fcb->streamobj; // Get listening socket (Rewatch)
-	port_t port = socket->port;
+	SCB* socket1 = fcb->streamobj; // Get listening socket (Rewatch)
+	port_t port1 = socket->port;
 	
-	if(socket->type != SOCKET_LISTENER || port < 0 || port > MAX_PORT || PORT_MAP[port] == NULL || (PORT_MAP[port])->type != SOCKET_LISTENER){
+	if(socket1->type != SOCKET_LISTENER || port1 < 0 || port1 > MAX_PORT || PORT_MAP[port1] == NULL || (PORT_MAP[port1])->type != SOCKET_LISTENER){
 		return NOFILE;
 	}
 
@@ -103,10 +103,10 @@ Fid_t sys_Accept(Fid_t lsock)
 		return NOFILE;
 	}
 
-	socket->refcount = socket->refcount + 1;
-	while(is_rlist_empty(&socket->listener_s.queue)){
-		kernel_wait(&socket->listener_s.req_available, SCHED_IO);
-		if(PORT_MAP[port] == NULL){ // Check if port is still valid
+	socket1->refcount = socket1->refcount + 1;
+	while(is_rlist_empty(&socket1->listener_s.queue)){
+		kernel_wait(&socket1->listener_s.req_available, SCHED_IO);
+		if(PORT_MAP[port1] == NULL){ // Check if port is still valid
 			return NOFILE;
 		}
 	}
@@ -148,7 +148,7 @@ Fid_t sys_Accept(Fid_t lsock)
 	socket3->peer_s.write_pipe = Reader_Socket2;
 
 	kernel_signal(&request->connected_cv);
-	socket->refcount--;
+	socket1->refcount--;
 	return socket3_fid;
 }
 
