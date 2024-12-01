@@ -90,14 +90,6 @@ Fid_t sys_Accept(Fid_t lsock)
 		return NOFILE;
 	}
 
-	socket->refcount = socket->refcount + 1;
-	while(is_rlist_empty(&socket->listener_s.queue)){
-		kernel_wait(&socket->listener_s.req_available,SCHED_IO);
-		if(PORT_MAP[port] == NULL){ // Check if port is valid
-			return NOFILE;
-		}
-	}
-
 	PCB* cur = CURPROC;
 
 	int fidFlag = 0;
