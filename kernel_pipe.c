@@ -146,7 +146,7 @@ int pipe_read(void* pipecb_t, char *buf, unsigned int n){
 		pipe->spaceEmpty++;  /*Increase empty space in the buffer*/
 	}
 	/*Wake up writers,  available space in the buffer*/
-	kerner_broadcast(&pipe->isfull);
+	kernel_broadcast(&pipe->isfull);
 
 	return numberBytesRead;
 }
