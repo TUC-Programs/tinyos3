@@ -84,7 +84,7 @@ Fid_t sys_Accept(Fid_t lsock)
 	}
 
 	SCB* socket1 = fcb->streamobj; // Get listening socket (Rewatch)
-	port_t port1 = socket->port;
+	port_t port1 = socket1->port;
 	
 	if(socket1->type != SOCKET_LISTENER || port1 < 0 || port1 > MAX_PORT || PORT_MAP[port1] == NULL || (PORT_MAP[port1])->type != SOCKET_LISTENER){
 		return NOFILE;
