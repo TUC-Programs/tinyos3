@@ -172,7 +172,7 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 
 	SCB* listener = PORT_MAP[port];
 	
-	CR* request = (CR*)xmalloc(sizeof(CR));
+	RC* request = (RC*)xmalloc(sizeof(RC));
 	
 	//Initialize request
 	request->admitted = 0;
