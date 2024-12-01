@@ -102,12 +102,13 @@ void start_main_thread_ptcb();
 /** @} */
 
 
-typedef struct Procinfo_CB{
+typedef struct procinfo_cb
+{
   procinfo* b_procinfo;
-  int pcb_pointer;
+  int pcb_cursor;
 }PROCINFO_CB;
 
 int procinfo_read(void* pinfo_cb, char *buf, unsigned int n);
 int procinfo_close(void* pinfo_cb);
-
+/** @} */
 #endif

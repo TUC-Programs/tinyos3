@@ -290,10 +290,12 @@ typedef struct core_control_block CCB;		/**< @brief Forward declaration */
 typedef struct device_control_block DCB;	/**< @brief Forward declaration */
 typedef struct file_control_block FCB;		/**< @brief Forward declaration */
 typedef struct process_thread_control_block PTCB;	/**< @brief Forward declaration */
-typedef struct pipe_control_block PipeCB;	/**< @brief Forward declaration */
-typedef struct socket_control_block SCB;	/**< @brief Forward declaration */
-typedef struct request_connection RC;		/**< @brief Forward declaration */
-
+//typedef struct pipe_control_block PipeCB;	/**< @brief Forward declaration */
+//typedef struct socket_control_block SCB;	/**< @brief Forward declaration */
+//typedef struct request_connection RC;		/**< @brief Forward declaration */
+typedef struct pipe_control_block PipeCB;
+typedef struct socket_control_block SCB;
+typedef struct request_connection RC;
 /** @brief A convenience typedef */
 typedef struct resource_list_node * rlnode_ptr;
 
@@ -313,7 +315,8 @@ typedef struct resource_list_node {
      \endcode
      */
   union {
-    RC* rc;
+    //RC* rc;
+    RC* connection_request;
     PCB* pcb; 
     TCB* tcb;
     CCB* ccb;
