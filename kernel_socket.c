@@ -123,6 +123,7 @@ Fid_t sys_Accept(Fid_t lsock)
 		return NOFILE;
 	}
 
+	// Establish connection between 2 peers and intialize the connection
 	socket2->type = SOCKET_PEER;
 	socket3->type = SOCKET_PEER;
 	socket2->peer_s.peer = socket3;
@@ -130,12 +131,12 @@ Fid_t sys_Accept(Fid_t lsock)
 	PipeCB* Reader_Socket2 = create_pipe_accept(fcb_2,fcb_3);
 	PipeCB* Reader_Socket3 = create_pipe_accept(fcb_3,fcb_2);
 	socket2->peer_s.read_pipe = Reader_Socket2;
-	socket2->peer_s.read_pipe = Reader_Socket3;
+	socket2->peer_s.write_pipe = Reader_Socket3;
 	socket3->peer_s.read_pipe = Reader_Socket3;
-	socket3->peer_s.read_pipe = Reader_Socket2;
+	socket3->peer_s.write_pipe = Reader_Socket2;
 
 	kernel_signal(&request->connected_cv);
-	socket->refcount = socket->refcount + 1;
+	socket->refcount = socket->refcount - 1;
 	return socket3_fid;
 }
 
