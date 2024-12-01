@@ -103,7 +103,7 @@ Fid_t sys_Accept(Fid_t lsock)
 		return NOFILE;
 	}
 
-	socket1->refcount = socket1->refcount + 1;
+	socket1->refcount++;
 	while(is_rlist_empty(&socket1->listener_s.queue)){
 		kernel_wait(&socket1->listener_s.req_available, SCHED_IO);
 		if(PORT_MAP[port1] == NULL){ // Check if port is still valid
