@@ -148,7 +148,7 @@ Fid_t sys_Accept(Fid_t lsock)
 	socket3->peer_s.write_pipe = Reader_Socket2;
 
 	kernel_signal(&request->connected_cv);
-	socket->refcount = socket->refcount - 1;
+	socket->refcount--;
 	return socket3_fid;
 }
 
@@ -195,7 +195,7 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 
 	rlist_push_back(&listener->listener_s.queue, &request->queue_node);
 	kernel_signal(&listener->listener_s.req_available);
-	listener->refcount = listener->refcount + 1;
+	listener->refcount++;
 
 	while(!request->admitted){
 		int wait = kernel_timedwait(&request->connected_cv, SCHED_IO, timeout);
@@ -203,7 +203,7 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 			return -1;
 		}
 	}	
-	listener->refcount = listener->refcount - 1;
+	listener->refcount--;
 
 	return 0;
 }
