@@ -52,21 +52,18 @@ typedef struct socket_control_block
 
 }SCB;
 
-/*Here is the declaration of function that we implement in 
-kernel_socket.c
+/*
+Declaration of the functions that we are using in kernel_socket.c
 */
 int socket_close(void* socket);
 int socket_read(void* socketcb_t, char *buf, unsigned int n);
 int socket_write(void* socketcb_t, const char *buf, unsigned int n);
 PipeCB* create_accept_pipe(FCB* reader, FCB* writer);
 
-/*Struct for connection request*/
+// Struct for connection request
 typedef struct request_connection {
-
   int admitted;
   SCB* peer;
-
   CondVar connected_cv;
   rlnode queue_node;
-
 }RC;
