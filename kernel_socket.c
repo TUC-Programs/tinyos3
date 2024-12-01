@@ -42,7 +42,7 @@ int sys_Listen(Fid_t sock)
 
 	FCB* fcb = get_fcb(sock);
 	if(fcb == NULL){ // Check if file control block is NULL
-		return = -1;
+		return -1;
 	}
 	
 	SCB* scb = fcb->streamobj;
@@ -98,7 +98,7 @@ Fid_t sys_Accept(Fid_t lsock)
 		}
 	}
 
-	RC* request = rlist_pop_front(&socket->listener_s.queue)->connection
+	RC* request = rlist_pop_front(&socket->listener_s.queue)->RC;
 	request->admitted = 1;
 	SCB* socket2 = request->peer;
 
