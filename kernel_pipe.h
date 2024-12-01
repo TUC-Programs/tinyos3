@@ -12,7 +12,7 @@ typedef struct pipe_control_block{
     int spaceEmpty;  //count the empty space of the buffer
 
     char buffer[PIPE_BUFFER_SIZE];  //bounded cyclic byte buffer
-}PIPE_cb;
+}PipeCB;
 
 int sys_Pipe(pipe_t* pipe);
 int pipe_write(void* pipecb_t, const char *buf, unsigned int n);
