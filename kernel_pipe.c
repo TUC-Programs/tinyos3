@@ -174,13 +174,17 @@ int pipe_write(void* pipecb_t,const char* buf, unsigned int n){
 	   available 'free space' in the pipe buffer and requested size 'n' */
 	 unsigned int bytestoWrite;
 	 if(n>free_space){
+		 
 		bytestoWrite = free_space;
+		 
 	 } else{
+		 
 		bytestoWrite = n;
 	 }
 
 	 // Write operation
 	 for(int i=0; i<bytestoWrite; i++){
+		 
 		pipe->buffer[pipe->w_position]= buf[i];
 		pipe->w_position = (pipe->w_position+1)%PIPE_BUFFER_SIZE;
 		pipe->empty_space--;
