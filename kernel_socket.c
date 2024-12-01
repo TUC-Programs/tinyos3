@@ -14,8 +14,7 @@ file_ops socket_file_ops = {
 	.Close = socket_close
 };
 
-Fid_t sys_Socket(port_t port)
-{
+Fid_t sys_Socket(port_t port){
 	if(port < 0 || port > MAX_PORT){ //check if the port is valid
 		return NOFILE;
 	}
@@ -38,8 +37,7 @@ Fid_t sys_Socket(port_t port)
 	return fid;
 } 
 
-int sys_Listen(Fid_t sock)
-{
+int sys_Listen(Fid_t sock){
 	if(sock < 0 || sock > MAX_FILEID){ // Check if file id is illigal
 		return -1;
 	}
@@ -74,8 +72,7 @@ int sys_Listen(Fid_t sock)
 }
 
 
-Fid_t sys_Accept(Fid_t lsock)
-{
+Fid_t sys_Accept(Fid_t lsock){
 
 	if(lsock < 0 || lsock >= MAX_FILEID){ // Check if the file is is illigal
 		return NOFILE;
@@ -169,8 +166,7 @@ Fid_t sys_Accept(Fid_t lsock)
 	return socket3_fid;
 }
 
-PipeCB* create_accept_pipe(FCB* reader, FCB* writer)
-{
+PipeCB* create_accept_pipe(FCB* reader, FCB* writer){
 	PipeCB* newPipe = (PipeCB*)malloc(sizeof(PipeCB));
 
 	newPipe->reader = reader;
@@ -186,8 +182,7 @@ PipeCB* create_accept_pipe(FCB* reader, FCB* writer)
 }
 
 
-int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
-{
+int sys_Connect(Fid_t sock, port_t port, timeout_t timeout){
 	
 	if (sock < 0 || sock >= MAX_FILEID ){ // Check if sock is inside the fid
 		return -1;
@@ -234,8 +229,7 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 }
 
 
-int sys_ShutDown(Fid_t sock, shutdown_mode how)
-{
+int sys_ShutDown(Fid_t sock, shutdown_mode how){
 	if(sock < 0 || sock > MAX_FILEID){ // Check if sock is inside the fid
 		return -1;
 	}
@@ -250,8 +244,7 @@ int sys_ShutDown(Fid_t sock, shutdown_mode how)
 		return -1;
 	}
 	
-	switch (how)
-	{
+	switch (how){
 	case SHUTDOWN_READ:
 		return pipe_reader_close(socket->peer_s.read_pipe);
 		break;
@@ -259,16 +252,12 @@ int sys_ShutDown(Fid_t sock, shutdown_mode how)
 		return pipe_writer_close(socket->peer_s.write_pipe);
 		break;
 	case SHUTDOWN_BOTH:
-		if(	!(pipe_reader_close(socket->peer_s.read_pipe)) || 
-			!(pipe_writer_close(socket->peer_s.write_pipe))  
-			)
-		{
+		if(!(pipe_reader_close(socket->peer_s.read_pipe)) || !(pipe_writer_close(socket->peer_s.write_pipe))  ){
 			return -1;
 		}
 		break;
 	default:
-		//wrong how
-		return -1;
+		return -1; //wrong how
 	}
 	return -1;	//if we are here we had a problem
 }
