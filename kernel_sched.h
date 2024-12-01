@@ -120,7 +120,7 @@ typedef struct process_thread_control_block
 }PTCB;
 
 TCB* thread_init(TCB* n_tcb, PCB* proc, void(*func)(), Task call, int argl,void*args);
-void acquire_PTCB(TCB* tcb, Task task, int argl, void*arg);
+
 
 
 
@@ -288,6 +288,16 @@ void sleep_releasing(Thread_state newstate, Mutex* mx, enum SCHED_CAUSE cause, T
   it will renew the quantum for the current thread.
  */
 void yield(enum SCHED_CAUSE cause);
+
+/**
+ Declaration of boost function
+
+ This function is made for boosting threads that are waiting to run for a while.
+ This is called at function yield when a thread has yield calls that exceed a specific
+ number that is defined at the start of the class (YIELD_CALLS). Then that thread gets
+ boosted and his yield_calls number is set to 0.
+*/
+void thread_boost();
 
 /**
   @brief Enter the scheduler.

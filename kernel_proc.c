@@ -39,12 +39,12 @@ static inline void initialize_PCB(PCB* pcb)
   for(int i=0;i<MAX_FILEID;i++)
     pcb->FIDT[i] = NULL;
 
-  rlnode_init(& pcb->children_list, NULL);
-  rlnode_init(& pcb->exited_list, NULL);
-  rlnode_init(& pcb -> list_ptcb, NULL);
+  rlnode_init(&pcb->children_list, NULL);
+  rlnode_init(&pcb->exited_list, NULL);
+  rlnode_init(&pcb->list_ptcb, NULL);
   pcb -> thread_count =0;
-  rlnode_init(& pcb->children_node, pcb);
-  rlnode_init(& pcb->exited_node, pcb);
+  rlnode_init(&pcb->children_node, pcb);
+  rlnode_init(&pcb->exited_node, pcb);
   pcb->child_exit = COND_INIT;
 }
 
@@ -133,7 +133,7 @@ is that here implement the ptcb
 
 void start_main_thread_ptcb()
 {
-if(cur_thread() != NULL){
+if(cur_thread() != NULL){ // Removed by Xenia
   int exitval;
 
   Task call =  cur_thread()->ptcb->task;
@@ -198,7 +198,7 @@ Pid_t sys_Exec(Task call, int argl, void* args)
     the initialization of the PCB.
    */
   if(call != NULL) {
-    newproc->main_thread = spawn_thread(newproc, start_main_thread);
+    newproc->main_thread = thread_init(newproc->main_thread,newproc,start_main_thread,call,argl,args);
     wakeup(newproc->main_thread);
   }
 

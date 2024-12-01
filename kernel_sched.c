@@ -11,8 +11,8 @@
 #include <valgrind/valgrind.h>
 #endif
 
-#define YIELD_CALLS 2000  // here is the maximum yield calls for the threads boosting
-#define PRIORITY_QUEUES 50 // we have choose 50 queues for the MLFQ
+#define YIELD_CALLS 500  // here is the maximum yield calls for the threads boosting
+#define PRIORITY_QUEUES 10 // we have choose 50 queues for the MLFQ
 
 int yield_calls;
 /********************************************
@@ -161,7 +161,6 @@ TCB* spawn_thread(PCB* pcb, void (*func)())
 	/* Set the owner */
 	tcb->owner_pcb = pcb;
 
-	tcb->owner_pcb = pcb;
 	tcb->ptcb = NULL;
 	tcb->priority = PRIORITY_QUEUES - 1;
 
@@ -275,7 +274,7 @@ static void sched_register_timeout(TCB* tcb, TimerDuration timeout)
 static void sched_queue_add(TCB* tcb)
 {
 	/* Insert at the end of the scheduling list */
-	rlist_push_back(&SCHED[tcb -> priority], &tcb->sched_node);
+	rlist_push_back(&SCHED[tcb->priority], &tcb->sched_node);
 
 	/* Restart possibly halted cores */
 	cpu_core_restart_one();
@@ -333,23 +332,21 @@ static void sched_wakeup_expired_timeouts()
 */
 static TCB* sched_queue_select(TCB* current)
 {
-	int maxPriority = 0;
 	int i;
+	int heighestQueue = PRIORITY_QUEUES -1;
 
 	//here traverse all queues to find the highest priority thread 
 	//Check if we have empty queues
-	for( i = PRIORITY_QUEUES - 1; i >= 0; i--){
-		int emptyQueue = is_rlist_empty(&SCHED[i]);
-
-		//check for emply queues
-		if(emptyQueue == 0){
-			maxPriority = i;
+	for( i = heighestQueue; i >= 0; i--){
+		if(!is_rlist_empty(&SCHED[i])){
+			heighestQueue = i;
 			break;
 		}
+		
 	}
 
 	/* Get the head of the SCHED list */
-	rlnode* sel = rlist_pop_front(&SCHED[maxPriority]);
+	rlnode* sel = rlist_pop_front(&SCHED[heighestQueue]);
 
 	TCB* next_thread = sel->tcb; /* When the list is empty, this is NULL */
 
@@ -442,8 +439,9 @@ void yield(enum SCHED_CAUSE cause)
 	Mutex_Lock(&sched_spinlock);
 
 	/* Update CURTHREAD state */
-	if (current->state == RUNNING)
+	if (current->state == RUNNING){
 		current->state = READY;
+	}
 
 	/* Update CURTHREAD scheduler data */
 	current->rts = remaining;
@@ -453,6 +451,11 @@ void yield(enum SCHED_CAUSE cause)
 	/* Wake up threads whose sleep timeout has expired */
 	sched_wakeup_expired_timeouts();
 
+	//
+	if(yield_calls > YIELD_CALLS){
+		thread_boost();
+		yield_calls = 0;
+	}
 
 	/*
 	We have consider that lowest priority queue is 0 and 
@@ -517,6 +520,22 @@ void yield(enum SCHED_CAUSE cause)
 	  */
 	gain(preempt);
 }
+
+/*
+	This function is called to boost thread when a thread is low on the priority queue 
+	and it has yielded enough times to pass the limit of YIELD_CALLS.
+*/
+void thread_boost()
+{
+	for(int i=PRIORITY_QUEUES-2; i>=0; i--){
+		while(!is_rlist_empty(&SCHED[i])){
+			rlnode* headQueue = rlist_pop_front(&SCHED[i]);
+			headQueue->tcb->priority = headQueue->tcb->priority + 1;
+			rlist_push_back(&SCHED[i+1], headQueue);
+		}
+	}
+}
+
 
 /*
   This function must be called at the beginning of each new timeslice.
@@ -641,35 +660,14 @@ void run_scheduler()
 
 
 
-TCB* thread_init(TCB* n_tcb, PCB* proc, void(*func)(), Task call, int argl,void*args){
-	n_tcb = spawn_thread(proc,func);
-	acquire_PTCB(n_tcb,call,argl,args);
-	n_tcb->owner_pcb->thread_count++;
-	return n_tcb;
-	/*if(n_tcb == NULL){
-		n_tcb = spawn_thread(proc,func);
-	}
-
-	if(n_tcb != NULL){
-		if(acquire_PTCB(n_tcb,call,argl,args) == 0){
-			n_tcb -> owner_pcb -> thread_count++;
-		}
-		else{
-			return NULL;
-		}
-	}
-
-	return n_tcb;*/
-}
-
-
-
-
-
-
-void acquire_PTCB(TCB* tcb, Task task, int argl, void*args)
-{
+TCB* thread_init(TCB* tcb, PCB* proc, void(*func)(), Task task, int argl,void*args){
+	tcb = spawn_thread(proc,func);
+	
+	// Acquire PTCB
 	PTCB* ptcb = (PTCB*)xmalloc(sizeof(PTCB));
+
+	ptcb->tcb = tcb;
+	tcb->ptcb = ptcb;
 
 	ptcb->task = task;
 	ptcb->argl = argl;
@@ -686,4 +684,6 @@ void acquire_PTCB(TCB* tcb, Task task, int argl, void*args)
 	rlist_push_back(&tcb->owner_pcb->list_ptcb, &ptcb->ptcb_list_node);   
 
 
+	tcb->owner_pcb->thread_count++;
+	return tcb;
 }
