@@ -53,4 +53,4 @@ typedef struct request_connection{
     SCB* peer;
     CondVar connected_cv;
     rlnode queue_node;
-} RC;
+}RC;
