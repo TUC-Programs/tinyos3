@@ -64,7 +64,7 @@ int sys_Listen(Fid_t sock)
 	socket->type = SOCKET_LISTENER;
 	socket->listener_s.req_available = COND_INIT;
 	rlnode_init(&(socket->listener_s.queue),NULL);
-	PORT_MAP[scb->port] = socket;
+	PORT_MAP[socket->port] = socket;
 	return 0;
 }
 
