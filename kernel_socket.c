@@ -98,7 +98,7 @@ Fid_t sys_Accept(Fid_t lsock)
 		}
 	}
 
-	RC* request = rlist_pop_front(&socket->listener_s.queue)->cr;
+	RC* request = rlist_pop_front(&socket->listener_s.queue)->rc;
 	request->admitted = 1;
 	SCB* socket2 = request->peer;
 
@@ -127,8 +127,8 @@ Fid_t sys_Accept(Fid_t lsock)
 	socket3->type = SOCKET_PEER;
 	socket2->peer_s.peer = socket3;
 	socket3->peer_s.peer = socket2;
-	PipeCB* Reader_Socket2 = createPipeForAccept(fcb_2,fcb_3);
-	PipeCB* Reader_Socket3 = createPipeForAccept(fcb_3,fcb_2);
+	PipeCB* Reader_Socket2 = create_pipe_accept(fcb_2,fcb_3);
+	PipeCB* Reader_Socket3 = create_pipe_accept(fcb_3,fcb_2);
 	socket2->peer_s.read_pipe = Reader_Socket2;
 	socket2->peer_s.read_pipe = Reader_Socket3;
 	socket3->peer_s.read_pipe = Reader_Socket3;
@@ -185,7 +185,7 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 	listener->refcount = listener->refcount + 1;
 
 	while(!request->admitted){
-		int wait = kerneL_timedwait(&request->connected_cv, SCHED_IO, timeout);
+		int wait = kernel_timedwait(&request->connected_cv, SCHED_IO, timeout);
 		if(!wait){ // Request timeout
 			return -1;
 		}
