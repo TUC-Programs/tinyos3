@@ -46,6 +46,7 @@ typedef struct socket_control_block // Socket Control Block
 int socket_close(void* socket);
 int socket_read(void* socket, char *buffer, unsigned int n);
 int socket_write(void* socket, const char *buffer, unsigned int n);
+PipeCB* create_pipe_accept(FCB* reader, FCB* writer)
 
 typedef struct request_connection{
     int admitted;
