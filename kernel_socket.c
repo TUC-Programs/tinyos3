@@ -190,8 +190,9 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 			return -1;
 		}
 	}	
-	listener->refcount = listener->refcount + 1;
+	listener->refcount = listener->refcount - 1;
 
+	return 0;
 }
 
 
