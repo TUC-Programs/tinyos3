@@ -111,7 +111,7 @@ int pipe_read(void* pipecb_t, char *buf, unsigned int n){
 	unsigned int availableBytesRead = PIPE_BUFFER_SIZE - pipe->spaceEmpty;
 
 	/*Check if the write end , the pipe buffer is empty or closed return 0*/
-	if(availableBytesRead == 0 || pipe->writer == NULL){
+	if(availableBytesRead == 0 && pipe->writer == NULL){
 		return 0;
 	}
 
@@ -142,7 +142,7 @@ int pipe_read(void* pipecb_t, char *buf, unsigned int n){
 	for(int i = 0; i < numberBytesRead; i++){
 		buf[i] = pipe->buffer[pipe->r_position];
 		/*Update read position*/
-		pipe->r_position = (pipe->r_position + 1)%PIPE_BUFFER_SIZE; 
+		pipe->r_position = (pipe->r_position + 1) % PIPE_BUFFER_SIZE; 
 		pipe->spaceEmpty++;  /*Increase empty space in the buffer*/
 	}
 	/*Wake up writers,  available space in the buffer*/
@@ -178,7 +178,7 @@ int pipe_reader_close(void* _pipecb){
 	}
 	PipeCB* pipe = (PipeCB*) _pipecb;
 
-	pipe->writer = NULL;
+	pipe->reader = NULL;
 
 	/*Check if reader is empty, free the pipe*/
 	if(pipe->spaceEmpty == PIPE_BUFFER_SIZE && pipe->writer == NULL){
