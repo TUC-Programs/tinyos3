@@ -327,10 +327,91 @@ void sys_Exit(int exitval)
 
 }
 
-
+file_ops procinfo_ops = {
+  .Read = procinfo_read,
+  .Close = procinfo_close
+};
 
 Fid_t sys_OpenInfo()
 {
-	return NOFILE;
+  Fid_t fid;
+  FCB* fcb;
+
+  if(FCB_reserve(1,&fid,&fcb) == 0){
+    return NOFILE;
+  }
+
+  PROCINFO_CB* pipeinfo_cb = (PROCINFO_CB*)malloc(sizeof(PROCINFO_CB));
+
+  fcb->streamfunc = &procinfo_ops;
+  fcb->streamobj = &pipeinfo_cb;
+
+  pipeinfo_cb->b_procinfo = NULL;
+  pipeinfo_cb->pcb_pointer = 0;
+
+  return fid;
+
 }
+
+int procinfo_read(void* pinfo_cb, char *buf, unsigned int n){
+
+  PROCINFO_CB* pinfo = (PROCINFO_CB*)pinfo_cb;
+
+  pinfo->b_procinfo = (procinfo*)malloc(sizeof(procinfo));
+
+  /*In this loop traverse through Process Table with all processecsc
+  startin from pointer posistion*/
+  for(int i = pinfo->pcb_pointer; i < MAX_PROC; i++){
+    //if the processes is not free take the info
+    if(PT[i].pstate != FREE){
+      pinfo->b_procinfo->pid = get_pid(&PT[i]);
+      //the procs with pid 0 and 1 have parents
+      if(i > 1){
+        pinfo->b_procinfo->ppid = get_pid(PT[i].parent);
+      }
+      if(PT[i].pstate == ALIVE){
+        pinfo->b_procinfo->alive = 1;
+      }else{
+        pinfo->b_procinfo->alive = 0;
+      }
+
+      pinfo->b_procinfo->thread_count = PT[i].thread_count;
+      pinfo->b_procinfo->main_task = PT[i].main_task;
+      pinfo->b_procinfo->argl = PT[i].argl;
+
+      int size_argl;
+      if(PT[i].argl >= PROCINFO_MAX_ARGS_SIZE){
+        size_argl = PROCINFO_MAX_ARGS_SIZE;
+      }
+      else{
+        size_argl = PT[i].argl;
+      }
+
+      memcpy(pinfo->b_procinfo->args, PT[i].args, size_argl);
+
+      //here add the procinfo struct to the buffer
+      memcpy(buf,pinfo->b_procinfo, n);
+
+      //update the cursor position to the next process
+      pinfo->pcb_pointer = i+1;
+
+      return n;
+
+    }
+  }
+
+  //exhausted
+  return -1;
+
+}
+
+int procinfo_close(void* pinfo_cb){
+  if(pinfo_cb == NULL){
+    return -1;
+  }
+  PROCINFO_CB* pinfo = (PROCINFO_CB*)pinfo_cb;
+  free(pinfo);
+  return 0;
+}
+
 
