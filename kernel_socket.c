@@ -258,7 +258,7 @@ int socket_close(void* socket){
 	return 0;
 }
 
-int read_socket(void* socetcb_t, char* buf, unsigned int n){
+int socket_read(void* socetcb_t, char* buf, unsigned int n){
 	
 	SCB* socket = (SCB*)socetcb_t;
 
