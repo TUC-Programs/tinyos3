@@ -108,6 +108,7 @@ typedef struct procinfo_cb
   int pcb_cursor;
 }PROCINFO_CB;
 
+//Here is the function that implement in kernel_proc.c
 int procinfo_read(void* pinfo_cb, char *buf, unsigned int n);
 int procinfo_close(void* pinfo_cb);
 /** @} */
