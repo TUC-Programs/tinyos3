@@ -58,7 +58,7 @@ kernel_socket.c
 int socket_close(void* socket);
 int socket_read(void* socketcb_t, char *buf, unsigned int n);
 int socket_write(void* socketcb_t, const char *buf, unsigned int n);
-PipeCB* createPipeForAccept(FCB* reader, FCB* writer);
+PipeCB* create_accept_pipe(FCB* reader, FCB* writer);
 
 /*Struct for connection request*/
 typedef struct request_connection {
