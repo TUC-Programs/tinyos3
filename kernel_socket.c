@@ -14,7 +14,7 @@ file_ops socket_file_ops = {
 
 Fid_t sys_Socket(port_t port)
 {
-	if(port <= 0 || port > MAX_PORT){ // Check if port is valid else return -1
+	if(port < 0 || port > MAX_PORT){ // Check if port is valid else return -1
 		return NOFILE;	// (Rewatch) not 100% sure about the = in the <=
 	}
 
