@@ -508,7 +508,7 @@ int Dup2(Fid_t oldfd, Fid_t newfd);
 typedef struct pipe_s {
 	Fid_t read;			/**< The read end of the pipe */
 	Fid_t write;		/**< The write end of the pipe */
-} pipe_t;
+}pipe_t;
 
 
 /**
@@ -736,7 +736,7 @@ typedef struct procinfo
 
     If the task's argument is longer (as designated by the @c argl field), the
     bytes contained in this field are just the prefix.  */
-} procinfo;
+}procinfo;
 
 
 /**
