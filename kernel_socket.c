@@ -240,7 +240,7 @@ int socket_close(void* socket){
 		return -1;
 	}
 
-	SCB* socket_cb = (SCB*)socket_cb;
+	SCB* socket_cb = (SCB*) socket;
 
 	if(socket_cb->type == SOCKET_LISTENER){
 		PORT_MAP[socket_cb->port] = NULL;
