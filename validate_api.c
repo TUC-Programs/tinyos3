@@ -2571,8 +2571,8 @@ TEST_SUITE(all_tests,
 	//&concurrency_tests,
 	//&io_tests,
 	&thread_tests,
-	//&pipe_tests,
-	//&socket_tests,
+	&pipe_tests,
+	&socket_tests,
 	NULL
 };
 
