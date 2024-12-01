@@ -26,7 +26,7 @@ int sys_Pipe(pipe_t* pipe)
 	if(FCB_reserve(2,fid,fcb) == 0){
 		return -1;
 	}
-	PIPE_cb* pipe_cb = (PIPE_cb*)malloc(sizeof(PIPE));
+	PipeCB* pipe_cb = (PipeCB*)malloc(sizeof(PipeCB));
 
 	pipe->read = fid[0];
 	pipe->write = fid[1];
@@ -51,7 +51,7 @@ int sys_Pipe(pipe_t* pipe)
 
 int pipe_write(void* pipecb_t, const char *buf, unsigned int n){
 
-	PIPE_cb* pipe = (PIPE_cb*) pipecb_t;
+	PipeCB* pipe = (PipeCB*) pipecb_t;
 	/*Ensure that the pipe, the writer, the reader, and the destination buffer are all open and valid. 
 	If any of these components are found to be closed or invalid, return an error code (-1).*/\
 	if(pipe == NULL || pipe->writer == NULL || pipe->reader == NULL || buf == NULL){
@@ -98,7 +98,7 @@ int pipe_write(void* pipecb_t, const char *buf, unsigned int n){
 
 int pipe_read(void* pipecb_t, char *buf, unsigned int n){
 
-	PIPE_cb* pipe = (PIPE_cb*) pipecb_t;
+	PipeCB* pipe = (PipeCB*) pipecb_t;
 
 	/*Verify that the pipe, the reader or the destination buffer is closed or invalid
 	If any of these are not functioning return (-1)*/
@@ -157,7 +157,7 @@ int pipe_writer_close(void* _pipecb){
 	if(_pipecb == NULL){
 		return -1;
 	}
-	PIPE_cb* pipe = (PIPE_cb*) _pipecb;
+	PipeCB* pipe = (PipeCB*) _pipecb;
 
 	pipe->writer = NULL;
 
@@ -176,7 +176,7 @@ int pipe_reader_close(void* _pipecb){
 	if(_pipecb == NULL){
 		return -1;
 	}
-	PIPE_cb* pipe = (PIPE_cb*) _pipecb;
+	PipeCB* pipe = (PipeCB*) _pipecb;
 
 	pipe->writer = NULL;
 
