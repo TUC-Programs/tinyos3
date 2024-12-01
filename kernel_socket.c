@@ -301,9 +301,9 @@ int socket_write(void* socketcb_t, const char *buf, unsigned int n){
 
 }
 
-PIPE_cb* create_pipe_accept(FCB* reader, FCB* writer){
+PipeCB* create_pipe_accept(FCB* reader, FCB* writer){
 
-	PIPE_cb* nPipe = (PIPE_cb*)malloc(sizeof(PIPE_cb));
+	PipeCB* nPipe = (PipeCB*)malloc(sizeof(PipeCB));
 
 	nPipe->reader = reader;
 	nPipe->writer = writer;
