@@ -98,7 +98,7 @@ Fid_t sys_Accept(Fid_t lsock)
 		}
 	}
 
-	RC* request = rlist_pop_front(&socket->listener_s.queue)->RC;
+	RC* request = rlist_pop_front(&socket->listener_s.queue)->cb;
 	request->admitted = 1;
 	SCB* socket2 = request->peer;
 
