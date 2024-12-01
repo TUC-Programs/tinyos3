@@ -24,8 +24,10 @@ Fid_t sys_Socket(port_t port)
 		return NOFILE;
 	}
 	SCB* scb = (SCB*) malloc(sizeof(SCB));
+	
 	fcb->streamfunc = &socket_file_ops;
 	fcb->streamobj = scb;
+	
 	scb->fcb = fcb;
 	scb->refcount = 0;
 	scb->port = port;
@@ -45,24 +47,24 @@ int sys_Listen(Fid_t sock)
 		return -1;
 	}
 	
-	SCB* scb = fcb->streamobj;
-	if(scb == NULL){ // Check if socket control block exits else return -1
+	SCB* socket = fcb->streamobj;
+	if(socket == NULL){
 		return -1;
 	}
-	if(scb->type != SOCKET_UNBOUND){ // Check if socket is not unbound else return -1 
+	if(socket->type != SOCKET_UNBOUND){ // Check if socket is not unbound else return -1 
 		return -1;
 	}
-	if(scb->port <= 0 || scb->port > MAX_PORT){ // Check if port is valid else return -1
+	if(socket->port <= 0 || socket->port > MAX_PORT){ // Check if port is valid else return -1
 		return -1;
 	}
-	if(PORT_MAP[scb->port] != NULL){ // Check if the socket has already been initialized
+	if(PORT_MAP[socket->port] != NULL){ // Check if the socket has already been initialized
 		return -1;
 	}
 
-	scb->type = SOCKET_LISTENER;
-	scb->listener_s.req_available = COND_INIT;
-	rlnode_init(&(scb->listener_s.queue),NULL);
-	PORT_MAP[scb->port] = scb;
+	socket->type = SOCKET_LISTENER;
+	socket->listener_s.req_available = COND_INIT;
+	rlnode_init(&(socket->listener_s.queue),NULL);
+	PORT_MAP[scb->port] = socket;
 	return 0;
 }
 
