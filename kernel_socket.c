@@ -189,7 +189,7 @@ PipeCB* create_accept_pipe(FCB* reader, FCB* writer)
 int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 {
 	
-	if (sock < 0 || sock >= MAX_FILEID ){ // Check if sock is inside the fit
+	if (sock < 0 || sock >= MAX_FILEID ){ // Check if sock is inside the fid
 		return -1;
 	}
 	if(port < 0 || port > MAX_PORT){ // Check if port is valid
@@ -236,12 +236,12 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 
 int sys_ShutDown(Fid_t sock, shutdown_mode how)
 {
-	if(sock < 0 || sock > MAX_FILEID){
+	if(sock < 0 || sock > MAX_FILEID){ // Check if sock is inside the fid
 		return -1;
 	}
 
 	FCB* fcb_socket = get_fcb(sock);
-	if(fcb_socket == NULL){
+	if(fcb_socket == NULL){ // Check if the FCB of the socket is NULL then return error
 		return -1;
 	}
 
@@ -274,14 +274,20 @@ int sys_ShutDown(Fid_t sock, shutdown_mode how)
 }
 
 int socket_close(void* socket){
+	// Check if the socket is not NULL
 	if(socket == NULL){
 		return -1;
 	}
 
 	SCB* socket_cb = (SCB*) socket;
 
+	/*
+ 	Check if the socket type is SOCKET_LISTENER then set the socket's port inside PORT_MAP
+  	equal with NULL and broadcast that the port is available. 
+   	(Rewatch)
+	*/
 	if(socket_cb->type == SOCKET_LISTENER){
-		PORT_MAP[socket_cb->port]=NULL;
+		PORT_MAP[socket_cb->port] = NULL;
 		kernel_broadcast(&socket_cb->listener_s.req_available);
 	}else if (socket_cb->type == SOCKET_PEER){
 		if(!(pipe_reader_close(socket_cb->peer_s.read_pipe) || pipe_writer_close(socket_cb->peer_s.write_pipe))){
@@ -289,51 +295,45 @@ int socket_close(void* socket){
 		}
 		socket_cb->peer_s.peer = NULL;
 	}
-	socket_cb->refcount--;
+	socket_cb->refcount--; // Decrease refcount
 
 	return 0;
 }
 
 
-int socket_read(void* socketcb_t, char *buf, unsigned int n)
-{
+int socket_read(void* socketcb_t, char *buf, unsigned int n){
 	SCB* socket = (SCB*) socketcb_t;
-
-	/* Check if the socket or the destination buffer is NULL.
-       If any of them is NULL, return an error (-1) */
-	if(socket==NULL || buf==NULL){
+	
+ 	//Check if the socke or the destination buffer are not NULL
+	if(socket == NULL || buf == NULL){
 		return -1;
 	}
 
-	/* Check if the socket type is SOCKET_PEER, and if the peer and read_pipe are not NULL.
-       If any of these conditions is false, return an error (-1) */
+        //Check if the socket type is SOCKET_PEER, and if the peer and read_pipe are not NULL.
 	if (socket->type != SOCKET_PEER || socket->peer_s.peer == NULL || socket->peer_s.read_pipe == NULL){
 		return -1;
 	}
 
-	/* Call the pipe_read function to perform the read operation */
+	// Call the pipe_read function to perform the read operation
 	int bytesRead = pipe_read(socket->peer_s.read_pipe, buf, n);
 
 	return bytesRead; // Return the result of the pipe_read operation
 }
 
-int socket_write(void* socketcb_t, const char *buf, unsigned int n)
-{
+int socket_write(void* socketcb_t, const char *buf, unsigned int n){
 	SCB* socket = (SCB*) socketcb_t;
 
-	/* Check if the socket or the destination buffer is NULL.
-       If any of them is NULL, return an error (-1) */
+	// Check if the socket or the destination buffer is NULL.
 	if(socket==NULL || buf==NULL){
 		return -1;
 	}
 
-	/* Check if the socket type is SOCKET_PEER, and if the peer and write_pipe are not NULL.
-       If any of these conditions is false, return an error (-1) */
+	// Check if the socket type is SOCKET_PEER, and if the peer and write_pipe are not NULL.
 	if (socket->type != SOCKET_PEER || socket->peer_s.peer == NULL || socket->peer_s.write_pipe == NULL){
 		return -1;
 	}
 
-	/* Call the pipe_write function to perform the write operation */
+	// Call the pipe_write function to perform the write operation
 	int bytesWritten = pipe_write(socket->peer_s.write_pipe, buf, n);
 
 	return bytesWritten; // Return the result of the pipe_write operation
