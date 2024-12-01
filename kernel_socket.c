@@ -98,7 +98,7 @@ Fid_t sys_Accept(Fid_t lsock)
 		}
 	}
 
-	RC* request = rlist_pop_front(&socket->listener_s.queue)->cb;
+	RC* request = rlist_pop_front(&socket->listener_s.queue)->cr;
 	request->admitted = 1;
 	SCB* socket2 = request->peer;
 
@@ -172,7 +172,7 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 
 	SCB* listener = PORT_MAP[port];
 	
-	RC* request = (RC*)xmalloc(sizeof(RC));
+	CR* request = (CR*)xmalloc(sizeof(CR));
 	
 	//Initialize request
 	request->admitted = 0;
@@ -185,7 +185,7 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 	listener->refcount = listener->refcount + 1;
 
 	while(!request->admitted){
-		int wait = kernal_timer_wait(&request->connected_cv, SCHED_IO, timeout);
+		int wait = kerneL_timedwait(&request->connected_cv, SCHED_IO, timeout);
 		if(!wait){ // Request timeout
 			return -1;
 		}
@@ -241,7 +241,7 @@ int socket_close(void* socket){
 	SCB* socket_cb = (SCB*)socket_cb;
 
 	if(socket_cb->type == SOCKET_LISTENER){
-		PORT_MAP[socket_cb->port] == NULL;
+		PORT_MAP[socket_cb->port] = NULL;
 		kernel_broadcast(&socket_cb->listener_s.req_available);
 	}
 	else if(socket_cb->type == SOCKET_PEER){
@@ -294,7 +294,7 @@ int socket_write(void* socketcb_t, const char *buf, unsigned int n){
 	}
 
 	/*Call write_function to do the write operation*/
-	int bytesWritten = pipe_write(socket->peer_s.write_pipe, buf, n)
+	int bytesWritten = pipe_write(socket->peer_s.write_pipe, buf, n);
 
 	/*Return the result of the pipe_read operation*/
 	return bytesWritten;
