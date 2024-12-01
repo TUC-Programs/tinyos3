@@ -54,7 +54,7 @@ int sys_Listen(Fid_t sock)
 	if(scb->type != SOCKET_UNBOUND){ // Check if socket is not unbound else return -1 
 		return -1;
 	}
-	if(scb->port <= 0 || scb->port > MAX_PORT){ // Check if port is valid else return -1
+	if(scb->port < 0 || scb->port > MAX_PORT){ // Check if port is valid else return -1
 		return -1;
 	}
 	if(PORT_MAP[scb->port] != NULL){ // Check if the socket has already been initialized
