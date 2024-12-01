@@ -47,7 +47,7 @@ int socket_close(void* socket);
 int socket_read(void* socket, char *buffer, unsigned int n);
 int socket_write(void* socket, const char *buffer, unsigned int n);
 
-typedef struct rc{
+typedef struct request_connection{
     int admitted;
     SCB* peer;
     CondVar connected_cv;
