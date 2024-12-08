@@ -6,8 +6,10 @@
 #include "kernel_proc.h"
 #include "kernel_cc.h"
 
-
-
+/*
+	Struct named socket_file_ops with a type of file_ops
+ 	defines variables for use.
+*/
 file_ops socket_file_ops = {
 	.Read = socket_read,
 	.Write = socket_write,
@@ -15,13 +17,15 @@ file_ops socket_file_ops = {
 };
 
 Fid_t sys_Socket(port_t port){
-	if(port < 0 || port > MAX_PORT){ //check if the port is valid
+	//check if the port is valid
+	if(port < 0 || port > MAX_PORT){ 
 		return NOFILE;
 	}
 
 	Fid_t fid;
 	FCB* fcb;
-	if(FCB_reserve(1,&fid,&fcb) == 0){ //if FIT is full throw error
+	//if FIT is full throw error
+	if(FCB_reserve(1,&fid,&fcb) == 0){ 
     	return NOFILE;
 	}	
 	SCB* socket_cb = (SCB*) malloc(sizeof(SCB));
@@ -38,11 +42,13 @@ Fid_t sys_Socket(port_t port){
 } 
 
 int sys_Listen(Fid_t sock){
-	if(sock < 0 || sock > MAX_FILEID){ // Check if file id is illigal
+	// Check if file id is illigal
+	if(sock < 0 || sock > MAX_FILEID){ 
 		return -1;
 	}
 	
 	FCB* fcb = get_fcb(sock);
+	// Check if FCB is NULL
 	if(fcb==NULL){ // Check if FCB is NULL
 		return -1;
 	}
@@ -51,16 +57,19 @@ int sys_Listen(Fid_t sock){
 	if(socket_cb==NULL){
 		return -1;
 	}
-
-	if(socket_cb->type != SOCKET_UNBOUND){ // Check the type of the SCB if socket is UNBOUND
+	
+	// Check the type of the SCB if socket is UNBOUND
+	if(socket_cb->type != SOCKET_UNBOUND){ 
+		return -1;
+	}
+	
+	// Check if port is illigal
+	if(socket_cb->port <= 0 || socket_cb->port > MAX_PORT){ 
 		return -1;
 	}
 
-	if(socket_cb->port <= 0 || socket_cb->port > MAX_PORT){ // Check if port is illigal
-		return -1;
-	}
-
-	if(PORT_MAP[socket_cb->port] != NULL){ // Check if the socket has been initialized
+	// Check if the socket has been initialized
+	if(PORT_MAP[socket_cb->port] != NULL){ 
 		return -1;
 	}
 
@@ -74,12 +83,15 @@ int sys_Listen(Fid_t sock){
 
 Fid_t sys_Accept(Fid_t lsock){
 
-	if(lsock < 0 || lsock >= MAX_FILEID){ // Check if the file is is illigal
+	// Check if the file is is illigal
+	if(lsock < 0 || lsock >= MAX_FILEID){ 
 		return NOFILE;
 	}
 
 	FCB* fcb = get_fcb(lsock); 
-	if(fcb == NULL){ // Check if file id is not initialized by Listen()
+
+	// Check if file id is not initialized by Listen()
+	if(fcb == NULL){ 
 		return NOFILE;
 	}
 
@@ -108,8 +120,9 @@ Fid_t sys_Accept(Fid_t lsock){
 	}
 
 	socket1->refcount++; // Increase refcount
-	
-	while(is_rlist_empty(&socket1->listener_s.queue)){ // Wait for Request
+
+	// Wait for Request
+	while(is_rlist_empty(&socket1->listener_s.queue)){ 
 		kernel_wait(&socket1->listener_s.req_available, SCHED_IO);
 			
 		/* Check if the port is still valid */
@@ -161,7 +174,8 @@ Fid_t sys_Accept(Fid_t lsock){
 	socket3->peer_s.read_pipe = socket3_Reader;
 	socket3->peer_s.write_pipe = socket2_Reader;
 
-	kernel_signal(&request->connected_cv); // Sent a signal to the connected side
+	// Sent a signal to the connected side
+	kernel_signal(&request->connected_cv); 
 	socket1->refcount--; // Decrease refcount
 	return socket3_fid;
 }
@@ -183,25 +197,33 @@ PipeCB* create_accept_pipe(FCB* reader, FCB* writer){
 
 
 int sys_Connect(Fid_t sock, port_t port, timeout_t timeout){
+
+	// Check if sock is inside the fid
+	if (sock < 0 || sock >= MAX_FILEID ){ 
+		return -1;
+	}
 	
-	if (sock < 0 || sock >= MAX_FILEID ){ // Check if sock is inside the fid
+	// Check if port is valid
+	if(port < 0 || port > MAX_PORT){ 
 		return -1;
 	}
-	if(port < 0 || port > MAX_PORT){ // Check if port is valid
+
+	// Check if in the port has a socket
+	if(PORT_MAP[port] == NULL ){ 
 		return -1;
 	}
-	if(PORT_MAP[port] == NULL ){ // Check if in the port has a socket
-		return -1;
-	}
-	if(PORT_MAP[port]->type != SOCKET_LISTENER){ // Check if this socket is listener
+
+	// Check if this socket is listener
+	if(PORT_MAP[port]->type != SOCKET_LISTENER){ 
 		return -1;
 	}
 
 	FCB* fcb_socket = get_fcb(sock);
 
 	SCB* socket = fcb_socket->streamobj;
-	
-	if(socket->type != SOCKET_UNBOUND){ //check if the given socket is unbound
+
+	//check if the given socket is unbound
+	if(socket->type != SOCKET_UNBOUND){ 
 		return -1;
 	}	
 	SCB* listener = PORT_MAP[port];
@@ -214,8 +236,10 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout){
 	request->connected_cv = COND_INIT;
 	rlnode_init(&request->queue_node, request);
 
-	rlist_push_back(&listener->listener_s.queue, &request->queue_node); //add request to the listener's request queue
-	kernel_signal(&listener->listener_s.req_available); //signal the listener
+	//add request to the listener's request queue
+	rlist_push_back(&listener->listener_s.queue, &request->queue_node); 
+	//signal the listener
+	kernel_signal(&listener->listener_s.req_available); 
 	listener->refcount++; // Increase refcount
 
 	while (!request->admitted) {
@@ -230,12 +254,15 @@ int sys_Connect(Fid_t sock, port_t port, timeout_t timeout){
 
 
 int sys_ShutDown(Fid_t sock, shutdown_mode how){
-	if(sock < 0 || sock > MAX_FILEID){ // Check if sock is inside the fid
+
+	// Check if sock is inside the fid
+	if(sock < 0 || sock > MAX_FILEID){ 
 		return -1;
 	}
 
+	// Check if the FCB of the socket is NULL then return error
 	FCB* fcb_socket = get_fcb(sock);
-	if(fcb_socket == NULL){ // Check if the FCB of the socket is NULL then return error
+	if(fcb_socket == NULL){ 
 		return -1;
 	}
 
@@ -259,7 +286,7 @@ int sys_ShutDown(Fid_t sock, shutdown_mode how){
 	default:
 		return -1; //wrong how
 	}
-	return -1;	//if we are here we had a problem
+	return -1;  //if we are here we had a problem
 }
 
 int socket_close(void* socket){
