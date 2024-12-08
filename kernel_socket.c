@@ -300,20 +300,31 @@ int socket_close(void* socket){
 	/*
  	Check if the socket type is SOCKET_LISTENER then set the socket's port inside PORT_MAP
   	equal with NULL and broadcast that the port is available. 
-   	(Rewatch)
 	*/
 	if(socket_cb->type == SOCKET_LISTENER){
 		PORT_MAP[socket_cb->port] = NULL;
 		kernel_broadcast(&socket_cb->listener_s.req_available);
-	}else if (socket_cb->type == SOCKET_PEER){
+	}
+	/*
+ 	 If the socket type is SOCKET_PEER then it attempts to close both the reading and writing pipes for the peer connection. 
+         If either of these close operations fails, the function returns -1 to indicate an error.
+ 	*/
+	else if (socket_cb->type == SOCKET_PEER){
 		if(!(pipe_reader_close(socket_cb->peer_s.read_pipe) || pipe_writer_close(socket_cb->peer_s.write_pipe))){
 			return -1;
 		}
+		
+		/*It sets the peer field of the socket_cb structure to NULL,
+		  which indicates that the peer connection has been severed 
+		  and there is no longer an associated peer.
+		*/
 		socket_cb->peer_s.peer = NULL;
 	}
+	
 	socket_cb->refcount--; // Decrease refcount
 
 	return 0;
+	
 }
 
 
@@ -334,6 +345,7 @@ int socket_read(void* socketcb_t, char *buf, unsigned int n){
 	int bytesRead = pipe_read(socket->peer_s.read_pipe, buf, n);
 
 	return bytesRead; // Return the result of the pipe_read operation
+	
 }
 
 int socket_write(void* socketcb_t, const char *buf, unsigned int n){
@@ -353,4 +365,5 @@ int socket_write(void* socketcb_t, const char *buf, unsigned int n){
 	int bytesWritten = pipe_write(socket->peer_s.write_pipe, buf, n);
 
 	return bytesWritten; // Return the result of the pipe_write operation
+	
 }
