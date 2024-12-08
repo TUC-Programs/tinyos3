@@ -28,20 +28,27 @@ file_ops pipe_reader = {
 	.Close = pipe_reader_close
 };
 
+/*
+	The sys_Pipe function creates a pipe for contact between processes 
+ 	and intial Control Block required to manage the reading 
+  	and writing process on the pipe.
+*/
 int sys_Pipe(pipe_t* pipe){
-	Fid_t fid[2];
-	FCB* fcb[2];
+	Fid_t fid[2]; // In position 2 of fid we have the type of a file ID (Fid_t)
+	FCB* fcb[2];  // In position 2 of fcb we have the type of FCB 
+	
+	/*Check if we FCB_reserve is equal to zero*/
 	if(FCB_reserve(2,fid,fcb) == 0){
     	return -1;
 	}	
 	PipeCB* pipe_cb = (PipeCB*) malloc(sizeof(PipeCB));
 
-	pipe->read = fid[0];
-	pipe->write = fid[1];
+	pipe->read = fid[0];  // we use fid 0 for reading (as lectures notes)
+	pipe->write = fid[1]; // we use fid 1 for writinig (as lectures notes)
 
-	/*Initialize Pipe control block*/
-	pipe_cb->reader = fcb[0];
-	pipe_cb->writer = fcb[1];
+	/*Here we do the necessary initializations of Pipe Control Block*/ 
+	pipe_cb->reader = fcb[0];  // we put/initialize fcb 0 at pipe_cb (reader)
+	pipe_cb->writer = fcb[1];  // we put/initialize fcb 1 at pipe_cb (writer)
 	pipe_cb->is_empty = COND_INIT;
 	pipe_cb->is_full = COND_INIT;
 	pipe_cb->r_position = 0;
