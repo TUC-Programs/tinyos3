@@ -6,21 +6,29 @@
 #include "kernel_sched.h"
 #include "kernel_cc.h"
 
+/*
+	Struct named pipe_writter with a type of file_ops
+ 	defines variables for use and leave the function of
+  	read and then return error
+*/
 file_ops pipe_writer = {
 	.Read = (void*)pipe_error,
 	.Write = pipe_write,
 	.Close = pipe_writer_close
 };
 
+/*
+	Struct named pipe_reader with a type of file_ops
+ 	defines variables for use and leave the function of
+  	write and then return error
+*/
 file_ops pipe_reader = {
 	.Read = pipe_read,
 	.Write = (void*)pipe_error,
 	.Close = pipe_reader_close
 };
 
-int sys_Pipe(pipe_t* pipe)
-{
-	
+int sys_Pipe(pipe_t* pipe){
 	Fid_t fid[2];
 	FCB* fcb[2];
 	if(FCB_reserve(2,fid,fcb) == 0){
@@ -94,7 +102,6 @@ int pipe_writer_close(void* pipe_cb){
 }
 
 int pipe_read(void* pipecb_t, char *buf, unsigned int n){
-
 	PipeCB* pipe = (PipeCB*) pipecb_t;
 
 	/* Check if the pipe, the reader, or the destination buffer is closed or invalid.
@@ -197,7 +204,6 @@ int pipe_write(void* pipecb_t,const char* buf, unsigned int n){
 }
 
 /*This is used for when one reader try to write or when a writer try to read*/
-int pipe_error() 
-{
+int pipe_error(){
 	return -1;
 }
