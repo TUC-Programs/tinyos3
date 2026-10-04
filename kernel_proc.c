@@ -39,12 +39,12 @@ static inline void initialize_PCB(PCB* pcb)
   for(int i=0;i<MAX_FILEID;i++)
     pcb->FIDT[i] = NULL;
 
-  rlnode_init(& pcb->children_list, NULL);
-  rlnode_init(& pcb->exited_list, NULL);
-  rlnode_init(& pcb -> list_ptcb, NULL);
+  rlnode_init(&pcb->children_list, NULL);
+  rlnode_init(&pcb->exited_list, NULL);
+  rlnode_init(&pcb->list_ptcb, NULL);
   pcb -> thread_count =0;
-  rlnode_init(& pcb->children_node, pcb);
-  rlnode_init(& pcb->exited_node, pcb);
+  rlnode_init(&pcb->children_node, pcb);
+  rlnode_init(&pcb->exited_node, pcb);
   pcb->child_exit = COND_INIT;
 }
 
@@ -133,7 +133,7 @@ is that here implement the ptcb
 
 void start_main_thread_ptcb()
 {
-if(cur_thread() != NULL){
+if(cur_thread() != NULL){ // Removed by Xenia
   int exitval;
 
   Task call =  cur_thread()->ptcb->task;
@@ -198,7 +198,7 @@ Pid_t sys_Exec(Task call, int argl, void* args)
     the initialization of the PCB.
    */
   if(call != NULL) {
-    newproc->main_thread = spawn_thread(newproc, start_main_thread);
+    newproc->main_thread = thread_init(newproc->main_thread,newproc,start_main_thread,call,argl,args);
     wakeup(newproc->main_thread);
   }
 
@@ -327,10 +327,78 @@ void sys_Exit(int exitval)
 
 }
 
-
+file_ops procinfo_ops = {
+  .Read = procinfo_read,
+  .Close = procinfo_close
+};
 
 Fid_t sys_OpenInfo()
 {
-	return NOFILE;
+  Fid_t fid;
+  FCB* fcb;
+  if(FCB_reserve(1,&fid,&fcb) == 0){
+      return NOFILE;
+  } 
+
+  PROCINFO_CB* pinfo_cb = (PROCINFO_CB*) malloc(sizeof(PROCINFO_CB));
+
+  fcb->streamfunc = &procinfo_ops;
+  fcb->streamobj = pinfo_cb;
+
+  pinfo_cb->b_procinfo=NULL;
+  pinfo_cb->pcb_cursor=0;
+
+  return fid;
 }
 
+int procinfo_read(void* pinfo_cb, char *buf, unsigned int n){
+  PROCINFO_CB* pinfo = (PROCINFO_CB*) pinfo_cb;
+
+  pinfo->b_procinfo = (procinfo*)malloc(sizeof(procinfo));
+  /*This loop traverse through PT array with all processes
+  starting from the cursors potision*/
+  for(int i = pinfo->pcb_cursor; i < MAX_PROC; i++){
+    if(PT[i].pstate != FREE){ //if the processes is not free take the info
+      pinfo->b_procinfo->pid = get_pid(&PT[i]);
+      if(i>1){//the procs with pid 0 and 1 dont have parents
+        pinfo->b_procinfo->ppid = get_pid(PT[i].parent);
+      }
+      if(PT[i].pstate == ALIVE){
+        pinfo->b_procinfo->alive = 1;
+      }else{
+        pinfo->b_procinfo->alive = 0;
+      }
+      pinfo->b_procinfo->thread_count = PT[i].thread_count;
+      pinfo->b_procinfo->main_task = PT[i].main_task;
+      pinfo->b_procinfo->argl = PT[i].argl;
+
+      int argl_size;
+      if(PT[i].argl >= PROCINFO_MAX_ARGS_SIZE){
+        argl_size = PROCINFO_MAX_ARGS_SIZE;
+      }else{
+        argl_size =PT[i].argl;
+      }
+
+      memcpy(pinfo->b_procinfo->args, PT[i].args , argl_size);
+
+      //add the procinfo struct to the buffer
+      memcpy(buf, pinfo->b_procinfo, n);
+
+      //update the cursor potision to the next process
+      pinfo->pcb_cursor = i+1;
+
+      return n;
+    }
+  }
+  //exhausted
+  return -1;
+
+}
+int procinfo_close(void* pinfo_cb){
+  if(pinfo_cb == NULL){
+    return -1;
+  }
+  PROCINFO_CB* pinfo = (PROCINFO_CB* ) pinfo_cb;
+  free(pinfo);
+  return 0;
+}

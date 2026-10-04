@@ -49,11 +49,11 @@ typedef struct process_control_block {
   rlnode children_list;   /**< @brief List of children */
   rlnode exited_list;     /**< @brief List of exited children */
 
-  rlnode children_node;   /**< @brief Intrusive node for @c children_list */
-  rlnode exited_node;     /**< @brief Intrusive node for @c exited_list */
-
   rlnode list_ptcb;       /**< @brief ptcb list */  
   int thread_count;        /**< @brief thread counter*/
+
+  rlnode children_node;   /**< @brief Intrusive node for @c children_list */
+  rlnode exited_node;     /**< @brief Intrusive node for @c exited_list */
 
   CondVar child_exit;     /**< @brief Condition variable for @c WaitChild. 
 
@@ -101,4 +101,15 @@ Pid_t get_pid(PCB* pcb);
 void start_main_thread_ptcb();
 /** @} */
 
+
+typedef struct procinfo_cb
+{
+  procinfo* b_procinfo;
+  int pcb_cursor;
+}PROCINFO_CB;
+
+//Here is the function that implement in kernel_proc.c
+int procinfo_read(void* pinfo_cb, char *buf, unsigned int n);
+int procinfo_close(void* pinfo_cb);
+/** @} */
 #endif
